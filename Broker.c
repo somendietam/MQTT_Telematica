@@ -18,8 +18,8 @@ struct connack_variable_header{
 }connack_variable_header;
 
 //Definir funciones
-void printbuffer(char arr[]);
-void build_connack(int cliente_socket, struct connack_fixed_header *fixed_header, struct connack_variable_header *variable_header, int flag_clean_ssn);
+void printbuffer(char arr[], size_t size);
+char *build_connack(char *connack_message, struct connack_fixed_header *fixed_header, struct connack_variable_header *variable_header, int flag_clean_ssn);
 int search_flag_connect(char buffer[]);
 
 
@@ -27,6 +27,8 @@ int main() {
     int servidor_socket, cliente_socket;
     struct sockaddr_in servidor_addr, cliente_addr;
     socklen_t cliente_len;
+    char *connack_message = NULL;
+    connack_message = malloc(sizeof(char)*4);
     char buffer[BUFFER_SIZE];
 
     // Crear socket TCP/IP
@@ -74,14 +76,18 @@ int main() {
     }
 
     // Mostrar mensaje recibido
-    printbuffer(buffer);
-    // Verificar si el cliente quiere salir
-    printf("\n");
+    printbuffer(buffer, strlen(buffer));
     printf("\n");
 
     int flag = search_flag_connect(buffer);
 
-    build_connack(servidor_socket, &connack_fixed_header, &connack_variable_header, flag);
+    connack_message = build_connack(connack_message, &connack_fixed_header, &connack_variable_header, flag);
+
+    if (send(cliente_socket, connack_message, 4, 0) == -1) {
+            perror("Error al enviar el paquete CONNACK al servidor");
+            exit(EXIT_FAILURE);
+        }
+    printf("Paquete CONNACK enviado al cliente.\n");       
 
 
     printf("FIN DEL MAIN\n");
@@ -90,9 +96,9 @@ int main() {
 }
 
 
-void printbuffer(char arr[]) {
+void printbuffer(char arr[], size_t size) {
     printf("\n");
-    for (int i = 0; i<BUFFER_SIZE; ++i) {
+    for (int i = 0; i<size; ++i) {
         char c = arr[i];
         for (int j = 7; j >= 0; --j) {
             putchar((c & (1 << j)) ? '1' : '0');
@@ -150,8 +156,8 @@ int search_flag_connect(char buffer[]){
 }
 
 
-void build_connack(int cliente_socket, struct connack_fixed_header *fixed_header, struct connack_variable_header *variable_header, int flag_clean_ssn){
-    char buffer_connack[4];
+char *build_connack(char *connack_message, struct connack_fixed_header *fixed_header, struct connack_variable_header *variable_header, int flag_clean_ssn){
+
     connack_fixed_header.control_packet_type = 0x20;
     connack_fixed_header.remaining_length = 0x02;
     
@@ -163,25 +169,15 @@ void build_connack(int cliente_socket, struct connack_fixed_header *fixed_header
 
     connack_variable_header.return_code = 0x00;
 
+    connack_message[0] = connack_fixed_header.control_packet_type;
+    connack_message[1] = connack_fixed_header.remaining_length;
+    connack_message[2] = connack_variable_header.flags;
+    connack_message[3] = connack_variable_header.return_code;
 
-    buffer_connack[0] = connack_fixed_header.control_packet_type;
-    buffer_connack[1] = connack_fixed_header.remaining_length;
-    buffer_connack[2] = connack_variable_header.flags;
-    buffer_connack[3] = connack_variable_header.return_code;
-
-    printf("Este es el BUFFER CONNACK: \n");
-    printbuffer(buffer_connack);
     printf("\n");
+    printf("Este es el CONNACK: \n");
+    printbuffer(connack_message, 4);
 
-    ssize_t sizebufferconnack = sizeof(buffer_connack);
-    printf("Este es el sizeBUFFERCONNACK: %zu\n", sizebufferconnack);
-
-    // Enviar el paquete CONNECT al servidor
-    printf("Este es el sizeBUFFERCONNACK: %zu\n", sizebufferconnack);
-
-    send(cliente_socket, buffer_connack, sizebufferconnack, 0);
-    
-    printf("Paquete CONNACK enviado al cliente.\n");
-
+    return connack_message;
     
 }
