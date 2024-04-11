@@ -92,7 +92,7 @@ int main() {
     // Mostrar mensaje recibido
     printf("\n");
     printf("Paquete CONNACK recibido del servidor.\n"); 
-    printbuffer(buffer, strlen(buffer));
+    printbuffer(buffer, 4);
 }
 
 void printbuffer(char arr[], size_t size) {
