@@ -8,6 +8,7 @@
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 1883
+#define BUFFER_SIZE 1024
 
 // Estructura para el encabezado fijo (Fixed Header) del paquete CONNECT
 struct connect_fixed_header {
@@ -36,28 +37,20 @@ struct connect_payload {
 
 // Prototipos de funciones
 void encode_remaining_length(int length, char result[]);
-void build_connect_packet(int cliente_socket, char buffer_connack[], struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload);
+char *build_connect_packet(char *connect_message, size_t *connect_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload);
 void send_connect_packet(int socket, uint8_t *encoded_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header , struct connect_payload *connect_payload);
 void printbinario(char arr[]);
 void print_bytes_in_binary(char *arr);
+void printbuffer(char arr[], size_t size);
 
-
-void printbuffer(char arr[], int BUFFER_SIZE) {
-    printf("\n");
-    for (int i = 0; i<BUFFER_SIZE; ++i) {
-        char c = arr[i];
-        for (int j = 7; j >= 0; --j) {
-            putchar((c & (1 << j)) ? '1' : '0');
-        }
-        putchar(' ');
-    }
-    putchar('\n');
-}
 
 int main() {
     // Crear socket TCP/IP
-    char buffer_connack[4];
+    char buffer[BUFFER_SIZE];
+    char *connect_message = NULL;
+    size_t connect_length = 0;
     int cliente_socket;
+
     if ((cliente_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("Error al crear el socket");
         exit(EXIT_FAILURE);
@@ -80,11 +73,38 @@ int main() {
 
     printf("Conectado al servidor MQTT\n");
 
-    build_connect_packet(cliente_socket, buffer_connack, &connect_fixed_header, &connect_variable_header, &connect_payload);
+    connect_message = build_connect_packet(connect_message, &connect_length, &connect_fixed_header, &connect_variable_header, &connect_payload);
 
+    // Enviar el paquete CONNECT al servidor
+    if (send(cliente_socket, connect_message, connect_length, 0) == -1) {
+        perror("Error al enviar el paquete CONNECT al servidor");
+        exit(EXIT_FAILURE);
+    }
+    printf("Paquete CONNECT enviado al servidor.\n");    
+    
+    memset(buffer, 0, BUFFER_SIZE);
+    ssize_t bytes_recibidos = recv(cliente_socket, buffer, BUFFER_SIZE, 0);
 
-    // Bucle para recibir mensajes del cliente
+    if (bytes_recibidos <= 0) {
+        printf("Error al recibir mensaje del servidor\n");
+    }
 
+    // Mostrar mensaje recibido
+    printf("\n");
+    printf("Paquete CONNACK recibido del servidor.\n"); 
+    printbuffer(buffer, strlen(buffer));
+}
+
+void printbuffer(char arr[], size_t size) {
+    printf("\n");
+    for (int i = 0; i<size; ++i) {
+        char c = arr[i];
+        for (int j = 7; j >= 0; --j) {
+            putchar((c & (1 << j)) ? '1' : '0');
+        }
+        putchar(' ');
+    }
+    putchar('\n');
 }
 
 void encode_remaining_length(int length, char *result) {
@@ -102,7 +122,6 @@ void encode_remaining_length(int length, char *result) {
         i++;
     } while (length > 0);
 }
-
 
 void printbinario(char arr[]) {
     printf("\n");
@@ -130,20 +149,18 @@ void printbinario2(char arr[]) {
 
 
 // Función para construir el paquete CONNECT
-void build_connect_packet(int cliente_socket, char buffer_connack[], struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload) {
-
-    size_t bufsize = 0;
+char *build_connect_packet(char *connect_message, size_t *connect_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload) {
 
     printf("Ingrese Client ID: ");
-    getline(&connect_payload->clientID, &bufsize, stdin);
+    getline(&connect_payload->clientID, connect_length, stdin);
     connect_payload->clientID[strcspn(connect_payload->clientID, "\n")] = '\0'; // Eliminar el carácter de nueva línea
 
     printf("Ingrese nombre de usuario: ");
-    getline(&connect_payload->username, &bufsize, stdin);
+    getline(&connect_payload->username, connect_length, stdin);
     connect_payload->username[strcspn(connect_payload->username, "\n")] = '\0'; // Eliminar el carácter de nueva línea
 
     printf("Ingrese contraseña: ");
-    getline(&connect_payload->password, &bufsize, stdin);
+    getline(&connect_payload->password, connect_length, stdin);
     connect_payload->password[strcspn(connect_payload->password, "\n")] = '\0'; // Eliminar el carácter de nueva línea
 
     // Construir el encabezado fijo (Fixed Header)
@@ -215,85 +232,62 @@ void build_connect_packet(int cliente_socket, char buffer_connack[], struct conn
 
     printf("password strlen: %zu\n", strlen(connect_payload->password));
  
-
     char *result;
     result = malloc(sizeof(char)*4);
     encode_remaining_length(length, result);
 
-
     //construir paquete
-    int BUFFER_SIZE = 1 + strlen(result) + length;
-    char buffer[BUFFER_SIZE];
+    *connect_length= 1 + strlen(result) + length;
+    connect_message = malloc(sizeof(char)**connect_length);
     int offset = 0;
-    buffer[offset++] = fixed_header->control_packet_type;
+    connect_message[offset++] = fixed_header->control_packet_type;
 
     for (int i = 0; i < strlen(result); i++) {
-        buffer[offset++] = result[i];
+        connect_message[offset++] = result[i];
     }
 
     for (int i = 0; i < 2; i++) {
-        buffer[offset++] = variable_header->protocol_name_length[i];
+        connect_message[offset++] = variable_header->protocol_name_length[i];
     }
 
     for (int i = 0; i < 4; i++) {
-        buffer[offset++] = variable_header->protocol_name[i];
+        connect_message[offset++] = variable_header->protocol_name[i];
     }
 
-    buffer[offset++] = variable_header->protocol_version;
-    buffer[offset++] = variable_header->connect_flags;
+    connect_message[offset++] = variable_header->protocol_version;
+    connect_message[offset++] = variable_header->connect_flags;
 
     for (int i = 0; i < 2; i++) {
-        buffer[offset++] = variable_header->keep_alive[i];
+        connect_message[offset++] = variable_header->keep_alive[i];
     }
 
     for (int i = 0; i < 2; i++) {
-        buffer[offset++] = connect_payload->client_id_length[i];
+        connect_message[offset++] = connect_payload->client_id_length[i];
     }
 
     for (int i = 0; i < clientlength; i++) {
-        buffer[offset++] = connect_payload->clientID[i];
+        connect_message[offset++] = connect_payload->clientID[i];
     }
 
     for (int i = 0; i < 2; i++) {
-        buffer[offset++] = connect_payload->username_length[i];
+        connect_message[offset++] = connect_payload->username_length[i];
     }
 
     for (int i = 0; i < userlength; i++) {
-        buffer[offset++] = connect_payload->username[i];
+        connect_message[offset++] = connect_payload->username[i];
     }
 
     for (int i = 0; i < 2; i++) {
-        buffer[offset++] = connect_payload->password_length[i];
+        connect_message[offset++] = connect_payload->password_length[i];
     }
 
     for (int i = 0; i < passlength; i++) {
-        buffer[offset++] = connect_payload->password[i];
+        connect_message[offset++] = connect_payload->password[i];
     }
 
-    printf("BUFFER: ");
-    printbuffer(buffer, BUFFER_SIZE);
-
-        // Enviar el paquete CONNECT al servidor
-    if (send(cliente_socket, buffer, BUFFER_SIZE, 0) == -1) {
-        perror("Error al enviar el paquete CONNECT al servidor");
-        exit(EXIT_FAILURE);
-    }
-    printf("Paquete CONNECT enviado al servidor.\n");
-
-
-    // Recibir mensaje del servidor
-    size_t sizebufferconnack = strlen(buffer_connack);
-    ssize_t bytes_recibidos = recv(cliente_socket, buffer_connack, sizebufferconnack, 0);
-    printf("\nBYTES RECIBIDOS: %zu", bytes_recibidos);
-
-    if (bytes_recibidos <= 0) {
-        printf("Error al recibir mensaje del cliente\n");
-    }
-
-    // Mostrar mensaje recibido
-    printbuffer(buffer_connack, 4);
-    // Verificar si el cliente quiere salir
-
+    printf("\n");
+    printf("Este es el mensaje connect: \n");
+    printbuffer(connect_message,*connect_length);
+    return connect_message;
     
 }
-
