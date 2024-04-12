@@ -11,7 +11,7 @@
 #define BUFFER_SIZE 1024
 
 // Estructura para el encabezado fijo (Fixed Header) del paquete CONNECT
-struct connect_fixed_header {
+struct fixed_header {
     char control_packet_type;  // Tipo de paquete de control (CONNECT)
     char *remaining_length;     // Longitud restante del paquete
 } connect_fixed_header;
@@ -37,17 +37,19 @@ struct connect_payload {
 
 // Prototipos de funciones
 void encode_remaining_length(int length, char result[]);
-char *build_connect_packet(char *connect_message, size_t *connect_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload);
-void send_connect_packet(int socket, uint8_t *encoded_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header , struct connect_payload *connect_payload);
+char *build_connect_packet(char *connect_message, size_t *connect_length, struct fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload);
 void printbinario(char arr[]);
-void print_bytes_in_binary(char *arr);
 void printbuffer(char arr[], size_t size);
+void printbinario2(char arr[]);
+char *build_disconnect(char *disconnect_message);
 
 
 int main() {
     // Crear socket TCP/IP
     char buffer[BUFFER_SIZE];
     char *connect_message = NULL;
+    char *disconnect_message = NULL;
+    disconnect_message = malloc(sizeof(char)*2);
     size_t connect_length = 0;
     int cliente_socket;
 
@@ -93,6 +95,30 @@ int main() {
     printf("\n");
     printf("Paquete CONNACK recibido del servidor.\n"); 
     printbuffer(buffer, 4);
+
+    int option = 0;
+
+    while(1){
+        printf("\nIngrese el numero del mensaje: \n");
+        scanf("%i", &option);
+
+        if(option == 14){
+            disconnect_message = build_disconnect(disconnect_message);
+
+            printf("\nMENSAJE DISCONNECT: \n");
+            printbuffer(disconnect_message, 2);
+
+            // Enviar el paquete DISCONNECT al servidor
+            if (send(cliente_socket, disconnect_message, 2, 0) == -1) {
+                perror("Error al enviar el paquete DISCONNECT al servidor");
+                exit(EXIT_FAILURE);
+            }
+            printf("Paquete DISCONNECT enviado al servidor.\n");
+            close(cliente_socket);
+            break;
+        }
+    }
+    return 0;
 }
 
 void printbuffer(char arr[], size_t size) {
@@ -149,7 +175,7 @@ void printbinario2(char arr[]) {
 
 
 // Función para construir el paquete CONNECT
-char *build_connect_packet(char *connect_message, size_t *connect_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload) {
+char *build_connect_packet(char *connect_message, size_t *connect_length, struct fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload) {
 
     printf("Ingrese Client ID: ");
     getline(&connect_payload->clientID, connect_length, stdin);
@@ -290,4 +316,12 @@ char *build_connect_packet(char *connect_message, size_t *connect_length, struct
     printbuffer(connect_message,*connect_length);
     return connect_message;
     
+}
+
+char *build_disconnect(char * disconnect_message){
+
+    disconnect_message[0] = 0xE0;
+    disconnect_message[1] = 0x00;
+
+    return disconnect_message;
 }
