@@ -89,8 +89,24 @@ int main() {
         }
     printf("Paquete CONNACK enviado al cliente.\n");       
 
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE); // Limpiar el buffer
 
-    printf("FIN DEL MAIN\n");
+        // Recibir mensaje del cliente
+        ssize_t bytes_recibidos = recv(cliente_socket, buffer, BUFFER_SIZE, 0);
+        if (bytes_recibidos <= 0) {
+            perror("Error al recibir mensaje del cliente");
+            break;
+        }
+
+        if(buffer[0] == -32){
+            printbuffer(buffer,2);
+            printf("\nHa llegado un DISCONNECT, cerrando conexión...\n");
+            break;
+        }
+
+}
+    printf("\nFIN\n");
 
     return 0;
 }
