@@ -4,7 +4,7 @@ En el presente trabajo se busca la implementación del protocolo MQTT 3.1.1 en l
 ## Desarrollo
 Fundamentalmente se establecen los archivos cliente y servidor para establecer la conexión haciendo uso de la API de Sockets de Berkeley. Además, se inicializan las estructuras y variables necesarias para el llamado de las funciones que permitirán el intercambio de mensajes entre el cliente y el broker. Con fines de una estructura detallada, entendible y escalable, se crea un archivo para cada tipo de mensaje con su respectivo archivo encabezado. Respecto a la experiencia implementando el protocolo, se presentaron diversas dificultades con el entendimiento de la documentación del protocolo y de su respectiva implementación en el lenguaje C. La complejidad inherente al protocolo y las particularidades de su implementación han requerido un análisis detallado y un enfoque metódico para garantizar un desarrollo correcto y funcional del sistema de comunicación MQTT; gracias a esto se obtuvo un gran aprendizaje relacionado a la programación en red, trabajo en equipo y sobre todo el manejo del lenguaje C.
 
-###Diagrama de flujo 
+### Diagrama de flujo 
 ![Diagrama de flujo](https://github.com/somendietam/tele/blob/main/DiagramaFlujoMQTT.png)
 
 ## Aspectos Logrados
