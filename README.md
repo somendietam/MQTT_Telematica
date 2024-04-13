@@ -15,3 +15,6 @@ Finalmente, a pesar de que no se pudo desarrollar el 100% del protocolo como se 
 
 ## Referencias
 [Protocolo MQTT 3.1.1](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037)
+
+![Diagrama de flujo]([https://github.com/tu-usuario/tu-repositorio/ejemplo.jpg](https://github.com/somendietam/tele/blob/main/Diagrama%20de%20flujo%20MQTT.drawio.png))
+
