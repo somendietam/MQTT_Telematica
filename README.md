@@ -1,3 +1,6 @@
+# PROYECTO PROTOCOLO MQTT
+## Sofia Mendieta Marin, Thomas Rivera Fernandez, Brayan David Zuluaga Giraldo
+
 ## Introducción
 En el presente trabajo se busca la implementación del protocolo MQTT 3.1.1 en lenguaje C, un protocolo que opera mediante un modelo de publicación/suscripción, permitiendo a los clientes publicar mensajes en temas específicos y suscribirse a temas de interés. Para la realización del proyecto se usa la API Sockets de Berkeley con el fin de establecer una conexión entre el cliente y el servidor (broker). Con este enfoque, se facilita una comunicación eficiente y escalable entre dispositivos conectados, siendo ideal para aplicaciones IoT donde la eficiencia y la confiabilidad son fundamentales.
 
