@@ -1,6 +1,6 @@
 
 // Estructura para el encabezado fijo (Fixed Header) del paquete CONNECT
-struct fixed_header {
+struct connect_fixed_header {
     char control_packet_type;  // Tipo de paquete de control (CONNECT)
     char *remaining_length;     // Longitud restante del paquete
 };
@@ -28,4 +28,4 @@ void encode_remaining_length(int length, char result[]);
 void printbinario(char arr[]);
 void printbuffer(char arr[], size_t size);
 void printbinario2(char arr[]);
-char *build_connect_packet(char *connect_message, size_t *connect_length, struct fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload);
+char *build_connect_packet(char *connect_message, size_t *connect_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload);

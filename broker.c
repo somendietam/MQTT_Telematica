@@ -80,14 +80,21 @@ int main() {
 
         // Recibir mensaje del cliente
         ssize_t bytes_recibidos = recv(cliente_socket, buffer, BUFFER_SIZE, 0);
+        unsigned char input = (buffer[0] >> 4) & 0x0F;
         if (bytes_recibidos < 0) {
             perror("Error al recibir mensaje del cliente");
             break;
         }
 
-        if(buffer[0] == -32){
+        if(input == 14){
             printbuffer(buffer,2);
             printf("\nHa llegado un DISCONNECT, cerrando conexión...\n");
+            
+        }
+
+        if(input == 3){
+            printbuffer(buffer,BUFFER_SIZE);
+            printf("\nHa llegado un PUBLISH!");
         }
 
 }

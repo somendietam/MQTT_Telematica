@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "connect.h"
 #include "disconnect.h"
+#include "publish.h"
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 1883
@@ -13,14 +14,29 @@
 
 
 int main() {
-    struct fixed_header connect_fixed_header;
+    //inicialización estructuras connect
+    struct connect_fixed_header connect_fixed_header;
     struct connect_variable_header connect_variable_header;
     struct connect_payload connect_payload;
+
+    //inicialización estructuras publish
+    struct publish_fixed_header publish_fixed_header;
+    struct publish_variable_header publish_variable_header;
+    struct publish_payload publish_payload;
+
     // Crear socket TCP/IP
     char buffer[BUFFER_SIZE];
+
+    //creación variables connect
     char *connect_message = NULL;
     char *disconnect_message = NULL;
     size_t connect_length = 0;
+
+    //creación variables publish
+    char *publish_message = NULL;
+    size_t publish_length = 0;
+
+    // Crear socket TCP/IP
     int cliente_socket;
 
     if ((cliente_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -87,17 +103,19 @@ int main() {
             close(cliente_socket);
             break;
         }
+
+        if(option == 3){
+            publish_message = build_publish_packet(publish_message, &publish_length, &publish_fixed_header, &publish_variable_header, &publish_payload);
+            if (send(cliente_socket, publish_message, publish_length, 0) == -1) {
+                perror("Error al enviar el paquete PUBLISH al servidor");
+                exit(EXIT_FAILURE);
+            }
+            printf("Paquete PUBLISH enviado al servidor.\n");
+
+        }
     }
     return 0;
     free(connect_message);
     free(disconnect_message);
+    free(publish_message);
 }
-
-
-
-
-
-
-
-
-

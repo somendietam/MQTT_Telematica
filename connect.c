@@ -11,18 +11,25 @@
 #define BUFFER_SIZE 1024
 
 // Función para construir el paquete CONNECT
-char *build_connect_packet(char *connect_message, size_t *connect_length, struct fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload) {
+char *build_connect_packet(char *connect_message, size_t *connect_length, struct connect_fixed_header *fixed_header, struct connect_variable_header *variable_header, struct connect_payload *connect_payload) {
+
+    connect_payload->clientID = malloc(BUFFER_SIZE);
+    connect_payload->username = malloc(BUFFER_SIZE);
+    connect_payload->password = malloc(BUFFER_SIZE);
 
     printf("Ingrese Client ID: ");
     getline(&connect_payload->clientID, connect_length, stdin);
+    while(getchar() != '\n');
     connect_payload->clientID[strcspn(connect_payload->clientID, "\n")] = '\0'; // Eliminar el carácter de nueva línea
 
     printf("Ingrese nombre de usuario: ");
     getline(&connect_payload->username, connect_length, stdin);
+    while(getchar() != '\n');
     connect_payload->username[strcspn(connect_payload->username, "\n")] = '\0'; // Eliminar el carácter de nueva línea
 
     printf("Ingrese contraseña: ");
     getline(&connect_payload->password, connect_length, stdin);
+    while(getchar() != '\n');
     connect_payload->password[strcspn(connect_payload->password, "\n")] = '\0'; // Eliminar el carácter de nueva línea
 
     // Construir el encabezado fijo (Fixed Header)
@@ -151,6 +158,9 @@ char *build_connect_packet(char *connect_message, size_t *connect_length, struct
     printf("Este es el mensaje connect: \n");
     printbuffer(connect_message,*connect_length);
     free(result);
+    free(connect_payload->clientID);
+    free(connect_payload->username);
+    free(connect_payload->password);
     return connect_message;
     
 }
